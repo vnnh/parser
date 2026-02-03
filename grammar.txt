@@ -1,0 +1,28 @@
+Statement -> Assignment | Expression
+Assignment -> Identifier "=" Expression
+Expression -> Expression "+" Factor | Expression "-" Factor | Factor
+
+Factor -> Factor "*" Power | Factor "/" Power | Factor "%" Power | Power
+Power -> Unary "^" Power | Unary
+Unary -> "-" Unary | FunctionCall | Term
+Term -> Number | Identifier | "(" Expression ")" | Term "!"
+
+FunctionCall -> "sin" "(" Expression ")"
+	| "cos" "(" Expression ")"
+	| "sqrt" "(" Expression ")"
+	| "ln" "(" Expression ")"
+
+Number -> Digits | Digits "." Digits
+Digits -> Digit | Digits Digit
+
+Identifier -> LeadingChar | Identifier NonLeadingChar
+LeadingChar -> Letter | GreekChar
+NonLeadingChar -> Letter | GreekChar | Digit | "_"
+
+Digit -> "0" | ... | "9"
+Letter -> LowerLetter | UpperLetter
+LowerLetter -> "a" | ... | "z"
+UpperLetter -> "A" | ... | "Z"
+GreekChar -> LowerGreekLetter | UpperGreekLetter
+LowerGreekLetter -> "\u03B1" | ... | "\u03C9"
+UpperGreekLetter -> "\u0391" | ... | "\u03A9"
