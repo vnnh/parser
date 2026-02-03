@@ -1,0 +1,70 @@
+use crate::ast::{Expr, Opcode};
+use std::str::FromStr;
+
+grammar;
+
+// --- Parsing Rules ---
+
+// The "Statement" is the entry point. It can be an assignment or just math.
+pub Statement: Box<Expr> = {
+    Assignment,
+    Expression,
+}
+
+// Assignment (Lowest Precedence)
+// Example: "x = 5 + 2"
+Assignment: Box<Expr> = {
+    <id:Identifier> "=" <e:Expression> => Box::new(Expr::Assign(id, e)),
+}
+
+// Level 1: Addition & Subtraction
+Expression: Box<Expr> = {
+    <l:Expression> "+" <r:Factor> => Box::new(Expr::Op(l, Opcode::Add, r)),
+    <l:Expression> "-" <r:Factor> => Box::new(Expr::Op(l, Opcode::Sub, r)),
+    Factor,
+}
+
+// Level 2: Multiplication, Division, Modulus
+Factor: Box<Expr> = {
+    <l:Factor> "*" <r:Power> => Box::new(Expr::Op(l, Opcode::Mul, r)),
+    <l:Factor> "/" <r:Power> => Box::new(Expr::Op(l, Opcode::Div, r)),
+    <l:Factor> "%" <r:Power> => Box::new(Expr::Op(l, Opcode::Mod, r)),
+    Power,
+}
+
+// Level 3: Exponentiation (Right Associative usually, simplified to Left here)
+Power: Box<Expr> = {
+    <l:Unary> "^" <r:Power> => Box::new(Expr::Op(l, Opcode::Pow, r)),
+    Unary,
+}
+
+// Level 4: Unary & Functions
+Unary: Box<Expr> = {
+    "-" <e:Unary> => Box::new(Expr::Neg(e)),
+    <f:FunctionCall> => f,
+    Term,
+}
+
+// Level 5: Terms (Highest Precedence)
+Term: Box<Expr> = {
+    <n:Num> => Box::new(Expr::Number(n)),
+    <id:Identifier> => Box::new(Expr::Var(id)),
+    "(" <e:Expression> ")" => e,
+    // Enhancement: Post-fix Factorial
+    <t:Term> "!" => Box::new(Expr::Factorial(t)),
+}
+
+// --- Terminals (The Lexer) ---
+
+Num: f64 = <s:r"[0-9]+(\.[0-9]+)?"> => f64::from_str(s).unwrap();
+
+// Enhancement: Identifier
+// Matches standard alphanumeric OR Greek characters (Unicode range \u0370-\u03FF)
+Identifier: String = <s:r"[a-zA-Z_\u03B1-\u03C9\u0391-\u03A9][a-zA-Z0-9_\u03B1-\u03C9\u0391-\u03A9]*"> => s.to_string();
+
+FunctionCall: Box<Expr> = {
+    "sin" "(" <e:Expression> ")" => Box::new(Expr::Call("sin".to_string(), e)),
+    "cos" "(" <e:Expression> ")" => Box::new(Expr::Call("cos".to_string(), e)),
+    "sqrt" "(" <e:Expression> ")" => Box::new(Expr::Call("sqrt".to_string(), e)),
+    "ln" "(" <e:Expression> ")" => Box::new(Expr::Call("ln".to_string(), e)),
+}
